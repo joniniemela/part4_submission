@@ -49,4 +49,22 @@ test('responds with correct key for id', async () => {
     const response = await api.get('/api/blogs')
     assert(response.body[0].hasOwnProperty('id'))
 })
+test('can add new blog posts', async () => {
+    const newBlog = {
+        title: 'New post!',
+        author: 'I am a bot',
+        url: 'testi.org',
+        likes: 1,
+    }
+    await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(201)
+        .expect('Content-Type', /application\/json/)
+    const response = await api.get('/api/blogs')
+    const contents = response.body.map(r => r.title)
+    assert.strictEqual(response.body.length, initialBlogs.length + 1)
+
+    assert(contents.includes('New post!'))
+})
 
