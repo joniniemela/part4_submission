@@ -101,13 +101,23 @@ describe('favorite block', () => {
     })
 })
 
-describe('most blogs', () => {
-    test('most blog returns correct object with blog amount', () => {
+describe('most blogs author', () => {
+    test('most blogs author returns correct object with blog amount', () => {
         const expected = {
             author: "Robert C. Martin",
             blogs: 3
         }
         const result = listHelper.mostBlogs(listWithManyBlogs)
+        assert.deepStrictEqual(result, expected)
+    })
+})
+describe('most liked author', () => {
+    test('most liked author returns correct object with blog amount', () => {
+        const expected = {
+            author: "Edsger W. Dijkstra",
+            likes: 17
+        }
+        const result = listHelper.mostLikes(listWithManyBlogs)
         assert.deepStrictEqual(result, expected)
     })
 })
