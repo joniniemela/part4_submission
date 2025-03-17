@@ -1,11 +1,20 @@
+const config = require('./utils/config')
 const express = require('express')
 const app = express()
 const cors = require('cors')
 const blogsRouter = require('./controllers/blogs')
+const middleware = require('./utils/middleware')
+const logger = require('./utils/logger')
 const mongoose = require('mongoose')
 
-const mongoUrl = 'mongodb+srv://jonimikael1234:bGQSfrGLCUmQaBXi@cluster0.musgn.mongodb.net/blogilistaApp?retryWrites=true&w=majority&appName=Cluster0'
-mongoose.connect(mongoUrl)
+
+mongoose.connect(config.MONGODB_URI)
+    .then(() => {
+        logger.info('connected to MongoDB')
+    })
+    .catch((error) => {
+        logger.error('error connection to MongoDB:', error.message)
+    })
 
 app.use(cors())
 app.use(express.json())
