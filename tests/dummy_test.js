@@ -63,13 +63,6 @@ const listWithManyBlogs = [
     }
 ]
 
-test('dummy returns one', () => {
-    const blogs = []
-
-    const result = listHelper.dummy(blogs)
-    assert.strictEqual(result, 1)
-})
-
 describe('total likes', () => {
 
     test('of empty list is zero', () => {
@@ -120,4 +113,10 @@ describe('most liked author', () => {
         const result = listHelper.mostLikes(listWithManyBlogs)
         assert.deepStrictEqual(result, expected)
     })
+})
+test('dummy returns one', () => {
+    const blogs = []
+
+    const result = listHelper.dummy(blogs)
+    assert.strictEqual(result, 1)
 })
