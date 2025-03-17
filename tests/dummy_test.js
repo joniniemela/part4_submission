@@ -97,8 +97,17 @@ describe('favorite block', () => {
             __v: 0
         }
         const result = listHelper.favoriteBlog(listWithManyBlogs)
-        console.log(result)
         assert.deepStrictEqual(result, expected)
     })
 })
 
+describe('most blogs', () => {
+    test('most blog returns correct object with blog amount', () => {
+        const expected = {
+            author: "Robert C. Martin",
+            blogs: 3
+        }
+        const result = listHelper.mostBlogs(listWithManyBlogs)
+        assert.deepStrictEqual(result, expected)
+    })
+})
