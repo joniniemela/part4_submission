@@ -84,3 +84,25 @@ test('blog posts without likes will assign likes value 0', async () => {
     assert.strictEqual(contents[3], 0)
 })
 
+test('new blog posts without titles or url will respond with 400', async () => {
+    const newBlogWithoutTitle = {
+        author: 'I am a post without title',
+        url: 'testi.org',
+        likes: 1,
+    }
+    const newBlogWithoutUrl = {
+        title: 'I am a post without url',
+        author: 'I am a bot',
+        likes: 1,
+    }
+    await api
+        .post('/api/blogs')
+        .send(newBlogWithoutTitle)
+        .expect(400)
+    await api
+        .post('/api/blogs')
+        .send(newBlogWithoutUrl)
+        .expect(400)
+
+})
+
