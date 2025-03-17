@@ -67,4 +67,20 @@ test('can add new blog posts', async () => {
 
     assert(contents.includes('New post!'))
 })
+test('blog posts without likes will assign likes value 0', async () => {
+    const newBlog = {
+        title: 'New post without likes',
+        author: 'I am a bot',
+        url: 'testi.org',
+    }
+    await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(201)
+        .expect('Content-Type', /application\/json/)
+    const response = await api.get('/api/blogs')
+    const contents = response.body.map(r => r.likes)
+    assert(response.body[3].hasOwnProperty('likes'))
+    assert.strictEqual(contents[3], 0)
+})
 
