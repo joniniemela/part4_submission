@@ -85,9 +85,28 @@ describe('blog creating new posts capabilities', () => {
 describe('blog editing and deleting capabilities', async () => {
     test('can delete single blog post', async () => {
         const responseBefore = await api.get('/api/blogs')
-        await api.delete('/api/blogs/' + responseBefore.body[0].id)
+        await api.delete('/api/blogs/' + responseBefore.body[0].id).expect(204)
         const responseAfter = await api.get('/api/blogs')
         assert(!responseAfter.body[0].id.includes(responseBefore.body[0].id))
+    })
+    test('can edit blog post', async () => {
+        const responseBefore = await api.get('/api/blogs')
+        const blogToEdit = responseBefore.body[0]
+        const editedBlog = {
+            title: 'I am not nice',
+            author: 'I am bot',
+            url: 'testi.fi',
+            likes: 7
+        }
+        await api.put(`/api/blogs/${blogToEdit.id}`).send(editedBlog).expect(200)
+
+        const responseAfter = await api.get('/api/blogs')
+        const updatedBlog = responseAfter.body.find(blog => blog.id === blogToEdit.id)
+
+        assert.strictEqual(updatedBlog.title, editedBlog.title)
+        assert.strictEqual(updatedBlog.author, editedBlog.author)
+        assert.strictEqual(updatedBlog.url, editedBlog.url)
+        assert.strictEqual(updatedBlog.likes, editedBlog.likes)
     })
 })
 
