@@ -9,10 +9,12 @@ const api = supertest(app)
 const helper = require('./test_helper')
 const Blog = require('../models/blog')
 const User = require("../models/user");
+const jwt = require("jsonwebtoken");
 
 beforeEach(async () => {
     await Blog.deleteMany({})
     await Blog.insertMany(helper.initialBlogs)
+
 })
 
 describe('blog reading capabilities', () => {
@@ -116,18 +118,44 @@ describe('user management', () => {
 })
 
 describe('blog creating new posts capabilities', () => {
+    beforeEach(async () => {
+        await User.deleteMany({})
+
+        const passwordHash = await bcrypt.hash('salainen', 10)
+        const user = new User({username: 'loginuser', passwordHash})
+
+        await user.save()
+    })
+    test('user can login and acquire token', async () => {
+        const loginUser = {
+            username: 'loginuser',
+            password: 'salainen'
+        }
+        const result = await api
+            .post('/api/login')
+            .send(loginUser)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+        const userId = await User.find({ username: 'loginuser' })
+        const decodedToken = jwt.verify(result.body.token, process.env.SECRET)
+        assert.strictEqual(userId[0].id, decodedToken.id)
+    })
     test('can add new blog posts', async () => {
-        const testUser = await User.find({username: 'root'})
-        const testUserId = testUser[0]._id.toHexString()
+        const loginResponse = await api
+            .post('/api/login')
+            .send(({username: 'loginuser', password: 'salainen'}))
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+        const token = loginResponse.body.token
         const newBlog = {
             title: 'New post!',
             author: 'I am a bot',
             url: 'testi.org',
             likes: 1,
-            user: testUserId
         }
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -137,17 +165,37 @@ describe('blog creating new posts capabilities', () => {
 
         assert(contents.includes('New post!'))
     })
+    test('blog posts without token will result in 401 status error', async () => {
+        const newBlog = {
+            title: 'New post!',
+            author: 'I am a bot',
+            url: 'testi.org',
+            likes: 1,
+        }
+
+        const response = await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(401)
+            .expect('Content-Type', /application\/json/)
+        assert(response.body.error.includes('Unauthorized'))
+
+    })
     test('blog posts without likes will assign likes value 0', async () => {
-        const testUser = await User.find({username: 'root'})
-        const testUserId = testUser[0]._id.toHexString()
+        const loginResponse = await api
+            .post('/api/login')
+            .send(({username: 'loginuser', password: 'salainen'}))
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+        const token = loginResponse.body.token
         const newBlog = {
             title: 'New post without likes',
             author: 'I am a bot',
             url: 'testi.org',
-            user: testUserId
         }
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -158,26 +206,30 @@ describe('blog creating new posts capabilities', () => {
     })
 
     test('new blog posts without titles or url will respond with 400', async () => {
-        const testUser = await User.find({username: 'root'})
-        const testUserId = testUser[0]._id.toHexString()
+        const loginResponse = await api
+            .post('/api/login')
+            .send(({username: 'loginuser', password: 'salainen'}))
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+        const token = loginResponse.body.token
         const newBlogWithoutTitle = {
             author: 'I am a post without title',
             url: 'testi.org',
             likes: 1,
-            user: testUserId
         }
         const newBlogWithoutUrl = {
             title: 'I am a post without url',
             author: 'I am a bot',
             likes: 1,
-            user: testUserId
         }
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlogWithoutTitle)
             .expect(400)
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlogWithoutUrl)
             .expect(400)
 
@@ -185,11 +237,41 @@ describe('blog creating new posts capabilities', () => {
 })
 describe('blog editing and deleting capabilities', async () => {
     test('can delete single blog post', async () => {
+        const newBlog = {
+            title: 'New deletable post!',
+            author: 'I am a bot',
+            url: 'testi.org',
+            likes: 1,
+        }
+        const loginResponse = await api
+            .post('/api/login')
+            .send({ username: 'loginuser', password: 'salainen' }) // Removed unnecessary parentheses
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+        const token = loginResponse.body.token
+
+        await api
+            .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
+            .send(newBlog)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
+
         const responseBefore = await api.get('/api/blogs')
-        await api.delete('/api/blogs/' + responseBefore.body[0].id).expect(204)
+        const blogsBefore = responseBefore.body
+        const blogToDelete = blogsBefore.find(blog => blog.title === newBlog.title) // Find the new blog by title
+
+        await api
+            .delete(`/api/blogs/${blogToDelete.id}`) // Use correct ID
+            .set('Authorization', `Bearer ${token}`)
+            .expect(204)
+
         const responseAfter = await api.get('/api/blogs')
-        assert(!responseAfter.body[0].id.includes(responseBefore.body[0].id))
+        const blogsAfter = responseAfter.body
+        const titlesAfter = blogsAfter.map(blog => blog.title)
+        assert(!titlesAfter.includes(newBlog.title))
     })
+
     test('can edit blog post', async () => {
         const responseBefore = await api.get('/api/blogs')
         const blogToEdit = responseBefore.body[0]
