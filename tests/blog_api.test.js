@@ -117,11 +117,14 @@ describe('user management', () => {
 
 describe('blog creating new posts capabilities', () => {
     test('can add new blog posts', async () => {
+        const testUser = await User.find({username: 'root'})
+        const testUserId = testUser[0]._id.toHexString()
         const newBlog = {
             title: 'New post!',
             author: 'I am a bot',
             url: 'testi.org',
             likes: 1,
+            user: testUserId
         }
         await api
             .post('/api/blogs')
@@ -135,10 +138,13 @@ describe('blog creating new posts capabilities', () => {
         assert(contents.includes('New post!'))
     })
     test('blog posts without likes will assign likes value 0', async () => {
+        const testUser = await User.find({username: 'root'})
+        const testUserId = testUser[0]._id.toHexString()
         const newBlog = {
             title: 'New post without likes',
             author: 'I am a bot',
             url: 'testi.org',
+            user: testUserId
         }
         await api
             .post('/api/blogs')
@@ -152,15 +158,19 @@ describe('blog creating new posts capabilities', () => {
     })
 
     test('new blog posts without titles or url will respond with 400', async () => {
+        const testUser = await User.find({username: 'root'})
+        const testUserId = testUser[0]._id.toHexString()
         const newBlogWithoutTitle = {
             author: 'I am a post without title',
             url: 'testi.org',
             likes: 1,
+            user: testUserId
         }
         const newBlogWithoutUrl = {
             title: 'I am a post without url',
             author: 'I am a bot',
             likes: 1,
+            user: testUserId
         }
         await api
             .post('/api/blogs')
